@@ -1,40 +1,40 @@
 library(deSolve)
 library(ggplot2)
 library(patchwork)
-library(pracma)#找峰值
+library(pracma)
 library(scales)
 
 
-### 步骤2：定义微分方程
+
 growth_model <- function(t, m, parameters) {
   with(as.list(parameters), {
-    dm_dt <- a * m^(alpha) - (b+p/max_m) * m #west 方程
-    #dm_dt <- g * m * (1-m/max_m)*(1-p/p_max)#deng方程
+    dm_dt <- a * m^(alpha) - (b+p/max_m) * m #WBE growth equation 
+    #dm_dt <- g * m * (1-m/max_m)*(1-p/p_max)#deng equation
     return(list(dm_dt))
   })
 }
-# 初始条件
-set.seed(123)  # 设置随机数种子
-random_numbers1 <- rnorm(100, mean = 50, sd = 10)# 初始生物量
-random_numbers2 <- rnorm(100, mean = 50, sd = 5)# 初始生物量
-random_numbers3 <- rnorm(100, mean = 50, sd = 2)# 初始生物量
 
-random_numbers1=sort(random_numbers1)#升序排序
-random_numbers2=sort(random_numbers2)#升序排序
-random_numbers3=sort(random_numbers3)#升序排序
+set.seed(123)  
+random_numbers1 <- rnorm(100, mean = 50, sd = 10)
+random_numbers2 <- rnorm(100, mean = 50, sd = 5)
+random_numbers3 <- rnorm(100, mean = 50, sd = 2)
+
+random_numbers1=sort(random_numbers1)
+random_numbers2=sort(random_numbers2)
+random_numbers3=sort(random_numbers3)
 rand_tot=data.frame(tot_sd10=random_numbers1,tot_sd5=random_numbers2,tot_sd2=random_numbers3)
 totmass_v=c(random_numbers1,random_numbers2,random_numbers3)
 
-# 参数
+
 g=0.1
-a <- 0.1  # 用于生长的能量分配系数
-b <- 0.01  # 用于维持的能量分配系数
+a <- 0.1  
+b <- 0.01  
 ###################
-#without competition west's equation
+#without competition  WBE growth equation
 p=0
 p_max=10
 alpha=0.75
-theta=0.5#临界阈值
+theta=0.5
 beta=1
 max_m=1000000
 leafratio=matrix(nrow=100,ncol=100);int_lf=end_lf=matrix(nrow=100,ncol=3)
@@ -42,17 +42,17 @@ leafratio=matrix(nrow=100,ncol=100);int_lf=end_lf=matrix(nrow=100,ncol=3)
 for (j in 1:3){
 for (i in 1:100){
   m0=rand_tot[i,j]
-# 时间序列
-times <- seq(1, 100, by = 1)  # 从1到100，步长为1
-### 步骤4：求解微分方程
+
+times <- seq(1, 100, by = 1)  
+
 out <- ode(y = m0, times = times, func = growth_model, parms = c(a = a, b = b,p=p))
 total=out[,2]
-  if(i<theta*100){leafratio[,i]=beta*(1+p/p_max)*total^(alpha-1)}#随竞争增加叶比重增加
-  if(i>=theta*100){leafratio[,i]=beta*(1-p/p_max)*total^(alpha-1)}#随竞争增加叶比重减小
+  if(i<theta*100){leafratio[,i]=beta*(1+p/p_max)*total^(alpha-1)}
+  if(i>=theta*100){leafratio[,i]=beta*(1-p/p_max)*total^(alpha-1)}
 }
   
-  int_lf[,j]=round(leafratio[10,],4)#t=10时刻
-  end_lf[,j]=round(leafratio[100,],4)#最终时刻 放附件
+  int_lf[,j]=round(leafratio[10,],4)#t=10
+  end_lf[,j]=round(leafratio[100,],4)
 }
 int_df=c(int_lf[,1],int_lf[,2],int_lf[,3])
 end_df=c(end_lf[,1],end_lf[,2],end_lf[,3])
@@ -138,23 +138,22 @@ nocom_end=ggplot(df,aes(x = end_df,fill = class)) + geom_density(alpha=0.5)+
   scale_x_continuous(breaks=seq(0.21,0.27,by=0.02),limits=c(0.21,0.27))+
   scale_y_continuous(breaks=seq(0,500,by=500/4),limits=c(0,500))
 ##########################
-#with competition west's equation
+#with competition WBE growth equation
 p=2
 leafratio=matrix(nrow=100,ncol=100);int_lf=end_lf=matrix(nrow=100,ncol=3)
 for (j in 1:3){
   for (i in 1:100){
     m0=rand_tot[i,j]
-    # 时间序列
-    times <- seq(1, 100, by = 1)  # 从1到100，步长为1
-    ### 步骤4：求解微分方程
+
+    times <- seq(1, 100, by = 1)  
     out <- ode(y = m0, times = times, func = growth_model, parms = c(a = a, b = b,p=p))
     total=out[,2]
-    if(i<theta*100){leafratio[,i]=beta*(1+p/p_max)*total^(alpha-1)}#随竞争增加叶比重增加
-    if(i>=theta*100){leafratio[,i]=beta*(1-p/p_max)*total^(alpha-1)}#随竞争增加叶比重减小
+    if(i<theta*100){leafratio[,i]=beta*(1+p/p_max)*total^(alpha-1)}
+    if(i>=theta*100){leafratio[,i]=beta*(1-p/p_max)*total^(alpha-1)}
   }
   
-  int_lf[,j]=round(leafratio[10,],4)#t=10时刻
-  end_lf[,j]=round(leafratio[100,],4)#最终时刻 放附件
+  int_lf[,j]=round(leafratio[10,],4)
+  end_lf[,j]=round(leafratio[100,],4)
 }
 int_df=c(int_lf[,1],int_lf[,2],int_lf[,3])
 end_df=c(end_lf[,1],end_lf[,2],end_lf[,3])
@@ -227,16 +226,16 @@ for (ij1 in 1:length(alphav)){
     leafratio=matrix(nrow=100,ncol=100)
     for (i in 1:100){
       m0=random_numbers1[i]
-      # 时间序列
-      times <- seq(1, 100, by = 1)  # 从1到100，步长为1
-      ### 步骤4：求解微分方程
+  
+      times <- seq(1, 100, by = 1)  
+    
       out <- ode(y = m0, times = times, func = growth_model, parms = c(a = a, b = b,p=p))
       total=out[,2]
-      if(i<theta*100){leafratio[,i]=beta*(1+p/p_max)*total^(alpha-1)}#随竞争增加叶比重增加
-      if(i>=theta*100){leafratio[,i]=beta*(1-p/p_max)*total^(alpha-1)}#随竞争增加叶比重减小
+      if(i<theta*100){leafratio[,i]=beta*(1+p/p_max)*total^(alpha-1)}
+      if(i>=theta*100){leafratio[,i]=beta*(1-p/p_max)*total^(alpha-1)}
     }
     
-    lf_t10=round(leafratio[10,],4)#t=10时刻
+    lf_t10=round(leafratio[10,],4)#t=10
     pdf_obj=density(lf_t10)
     peak_indices=findpeaks(pdf_obj$y, npeaks=3,minpeakheight  = 0.001, minpeakdistance = 1,sortstr=TRUE)
     peak_values <- pdf_obj$x[peak_indices[,2]]
@@ -244,15 +243,15 @@ for (ij1 in 1:length(alphav)){
     peak_df=data.frame(peak_values=peak_values,peak_densities=peak_densities,
                        scaling_exponent=rep(alpha,length(peak_densities)),competition=rep(p,length(peak_densities)))
     #peakT=rbind(peakT,peak_df)
-    # 计算每个值之间的距离
+
     distance_matrix <- outer(peak_values, peak_values, function(ii, jj) abs(ii - jj))
-    # 计算所有距离的总和
+
     total_distance[kk] <- sum(distance_matrix)
-    # 计算值对的总数（不包括自身）
+
     num_pairs = length(peak_values)
     if(num_pairs>1){
       total_pairs = num_pairs * (num_pairs - 1)
-      # 计算平均距离
+
       average_distance[kk]=sum(distance_matrix)/total_pairs
     }else{
       average_distance[kk]=sum(distance_matrix)
@@ -322,3 +321,4 @@ annotate("text",x=0.55, y=4.3, label="D",angle = 0,size=15,family="sans")+
 
 #ggsave("West model_fig1.pdf",(totalmass+nocom_t10)/(com_t10+ sense_avgdis),width = 40, height = 40, units = "cm", dpi = 300) 
 #ggsave("West model_fig2.pdf",(nocom_end+ com_end+sense_totdis),width = 60, height = 20, units = "cm", dpi = 300) 
+
